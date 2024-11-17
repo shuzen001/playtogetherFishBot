@@ -15,7 +15,7 @@ import configparser
 import win32con
 import os
 import requests
-
+from dotenv import load_dotenv
 
 """
 mode
@@ -25,6 +25,8 @@ mode
 """
 mode = 0
 
+load_dotenv()
+NOTIFY_TOKEN = os.getenv('NOTIFY_TOKEN')
 activate = False
 counter = 0
 last_catch_time = None
@@ -132,10 +134,11 @@ def textBox(text , y ):
 
 
 def line_notify(message):
+    global NOTIFY_TOKEN
     token = 'ax3ccUSr7V3rUFZujWsYiwQRrnIwUKMGpD9BAxXgaI4'
     url = 'https://notify-api.line.me/api/notify'
     headers = {
-        'Authorization': 'Bearer ' + token
+        'Authorization': 'Bearer ' + NOTIFY_TOKEN
     }
     data = {
         'message': message
