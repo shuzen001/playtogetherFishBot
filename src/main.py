@@ -136,7 +136,6 @@ def textBox(text , y ):
 
 def line_notify(message):
     global NOTIFY_TOKEN
-    token = 'ax3ccUSr7V3rUFZujWsYiwQRrnIwUKMGpD9BAxXgaI4'
     url = 'https://notify-api.line.me/api/notify'
     headers = {
         'Authorization': 'Bearer ' + NOTIFY_TOKEN
