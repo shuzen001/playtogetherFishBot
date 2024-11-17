@@ -27,6 +27,7 @@ mode = 0
 
 load_dotenv()
 NOTIFY_TOKEN = os.getenv('NOTIFY_TOKEN')
+
 activate = False
 counter = 0
 last_catch_time = None

@@ -4,5 +4,4 @@ pyvenv.cfg
 config.ini
 libs
 include
-img
 .env
