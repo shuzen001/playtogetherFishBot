@@ -4,7 +4,6 @@ pyvenv.cfg
 libs
 include
 .env
-Autofishing_Playtogether-main
 大魚
 fish_shadow
-魚影
+魚影,大魚衝刺

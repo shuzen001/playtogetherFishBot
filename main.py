@@ -2,6 +2,8 @@ from pyautogui import screenshot as pyautogui_screenshot
 from pyautogui import press as pyautogui_press
 from pyautogui import locateOnScreen as pyautogui_locateOnScreen
 from pyautogui import pixel as pyautogui_pixel
+from ultralytics import YOLO
+from mss import mss
 
 import threading
 import cv2
@@ -58,6 +60,8 @@ mouse_x = 0
 mouse_y = 0
 
 screen = None
+fishing_state = 0 # 釣魚狀態
+large_fish = 0
 
 # 選定「釣魚觸發區域」的中心點（透過滑鼠左鍵點擊來設定）
 active_mouse_x = 0
@@ -109,6 +113,12 @@ if config.has_option(configSection, 'y_offset'):
 
 if config.has_option(configSection, 'sensitive'):
     sensitive = float(config.get(configSection, 'sensitive'))
+
+
+#------------------------------------------------------------------------
+model = YOLO('fish_shadow/runs/detect/train11/weights/best.pt').to('cuda')  # 將模型移動到 GPU
+model.verbose = False  # 關閉模型的冗長輸出
+#------------------------------------------------------------------------
 
 #------------------------------------------------------------------------
 # 函式：detectClick()
@@ -276,7 +286,7 @@ def line_notify(message):
 
 #-------------------------------------------------
 # 函式：fisher
-# 用途：主要的影像擷取與釣魚偵測邏輯，並在視窗中顯示畫面與資訊
+# 用途：主要的影像擷取與釣魚偵測邏輯作動，並在視窗中顯示畫面與資訊
 #-------------------------------------------------
 def fisher():
     global screen
@@ -284,6 +294,8 @@ def fisher():
     global hwnd
     global sensitive
     global mode
+    global fishing_state
+    global large_fish
 
     # 建立一個顯示畫面 window，並設定回呼函式
     cv2.namedWindow(windowName)
@@ -292,12 +304,13 @@ def fisher():
     # 隨時抓取視窗內滑鼠的動作
     cv2.setMouseCallback(windowName, mouse_event)
 
-
+    # with mss() as sct:
     while True:
-        # 截圖 BlueStacks 範圍（0,0） 到 (right, bot)
-        screen = pyautogui_screenshot(region=(0, 0, right, bot))
+        # # 截圖 BlueStacks 範圍（0,0） 到 (right, bot)
+        screen = pyautogui_screenshot(region=(0, 30, right-35, bot-20))
+        # screen = np.array(sct.grab({'top': 30, 'left': 0, 'width': right-35, 'height': bot-20}))
         screen = np.array(screen)
-
+        # screen = cv2.cvtColor(screen, cv2.COLOR_BGRA2BGR)
         screen = cv2.cvtColor(screen, cv2.COLOR_RGB2BGR)
 
         # 在畫面中畫一個方框，表示目前的滑鼠範圍（尚未正式鎖定）
@@ -311,25 +324,33 @@ def fisher():
 
         # 顯示模式
         if mode == 0:
-            textBox("Mode : keep", 490)
+            textBox("Mode : keep", 480)
         elif mode == 1:
-            textBox("Mode : sell", 490)
+            textBox("Mode : sell", 480)
         # mode = 2 可能是後續擴充用途
         elif mode == 2:
-            textBox("Mode : Big Fish")
+            textBox("Mode : Big Fish", 480)
         # 顯示目前是否啟動釣魚檢測
         if activate:
-            textBox("Active : on", 515)
+            textBox("Active : on", 500)
         else:
-            textBox("Active : off", 515)
+            textBox("Active : off", 500)
         # 顯示相似度敏感度
-        textBox("sensitive : " + str(sensitive), 465)
+        textBox("sensitive : " + str(sensitive), 460)
 
 
 
         # 若已在畫面中選定釣魚檢測區域 (active_mouse_x > 0)
         if active_mouse_x > 0:
-            # 以選定中心與偏移量，擷取該區域作為「比對模板」
+        # 使用 mss 抓取模板區域
+            # template_area = np.array(sct.grab({
+            #     'top': active_mouse_y - active_y_offset,
+            #     'left': active_mouse_x - active_x_offset,
+            #     'width': active_x_offset * 2,
+            #     'height': active_y_offset * 2
+            # }))
+            # template_area = cv2.cvtColor(template_area, cv2.COLOR_BGRA2GRAY)  # 注意 BGRA -> GRAY
+
             template_area = pyautogui_screenshot(region=(
                 active_mouse_x - active_x_offset,
                 active_mouse_y - active_y_offset,
@@ -366,17 +387,110 @@ def fisher():
                 _, max_day, _, maxloc = cv2.minMaxLoc(result_day)
                 _, max_night, _, maxloc = cv2.minMaxLoc(result_night)
 
-                # 如果白天模板的匹配度 >= 敏感度，就按下 'c'（預設對應遊戲內的釣魚指令）
-                if max_day >= sensitive:
-                    pyautogui_press('c')
-                    print("day catch", datetime.datetime.now(), "---", max_day)
-                    time.sleep(1)
-                
-                # 如果夜晚模板的匹配度 >= 敏感度，也按下 'c'
-                if max_night >= sensitive:
-                    pyautogui_press('c')
-                    print("night catch", datetime.datetime.now(), "---", max_night)
-                    time.sleep(1)
+                def reeling_up():
+                    global fishing_state
+
+                    """執行釣魚收線的動作。"""
+                    if max_day >= sensitive:
+                        pyautogui_press('c')
+                        fishing_state = 0
+                        print("day catch", datetime.datetime.now(), "---", max_day)
+                        time.sleep(1)
+                    
+                    if max_night >= sensitive:
+                        pyautogui_press('c')
+                        fishing_state = 0
+                        print("night catch", datetime.datetime.now(), "---", max_night)
+                        time.sleep(1)
+
+
+                # 一般魚跟大魚尺寸判斷
+                # 只拉大魚
+                if fishing_state == 1 : 
+                    if mode == 2: 
+                        results = model(screen, verbose=False)
+                        confidence_threshold = 0.85  # 設定信心度閾值
+                        
+                        # 使用全域變數
+                        global fish_buffer
+                        if 'fish_buffer' not in globals():
+                            fish_buffer = []  # 用於儲存最近幾幀的判斷結果
+                        
+                        buffer_size = 5  # 緩衝區大小（收集5幀）
+                        small_fish_threshold = 0.8  # 小魚判定閾值（超過60%幀數判定為小魚才確認）
+                        current_frame_result = None  # 當前幀的判斷結果
+
+                        for result in results:
+                            boxes = result.boxes
+                            for box in boxes:
+                                x1,y1,x2,y2 = box.xyxy[0]
+                                x1,y1,x2,y2 = int(x1), int(y1), int(x2), int(y2)
+
+                                cls = int(box.cls[0])
+                                conf = float(box.conf[0])
+                                
+                                if conf >= confidence_threshold:
+                                    current_frame_result = cls  # 記錄當前幀的判斷結果
+                                    class_name = "Big Fish" if cls == 0 else "Small Fish"
+                                    confidence_status = "高信心度"
+
+                                    cv2.rectangle(screen, (x1, y1), (x2, y2), (0,255,0), 2)
+                                    
+                                    label = f"{class_name}: {conf:.2f} ({confidence_status})"
+                                    cv2.putText(screen, label, (x1, y1 - 10), 
+                                            cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
+                                    
+                                    print(f"檢測到 {class_name}，信心度: {conf:.2f} ({confidence_status})")
+                        
+                        # 更新緩衝區
+                        if current_frame_result is not None:
+                            fish_buffer.append(current_frame_result)
+                            if len(fish_buffer) > buffer_size:
+                                fish_buffer.pop(0)  # 移除最舊的判斷結果
+                            
+                            # 只有當緩衝區已滿時才進行判斷
+                            if len(fish_buffer) == buffer_size:
+                                # 計算小魚（cls=1）的比例
+                                small_fish_ratio = fish_buffer.count(1) / buffer_size
+                                # 計算大魚（cls=0）的比例
+                                big_fish_ratio = fish_buffer.count(0) / buffer_size
+                                
+                                if big_fish_ratio >= small_fish_threshold:
+                                    large_fish = 1  # 確認是大魚
+                                    fish_buffer.clear()  # 清空緩衝區
+                                elif small_fish_ratio >= small_fish_threshold:
+                                    large_fish = 2  # 確認是小魚
+                                    fish_buffer.clear()  # 清空緩衝區
+                                else:
+                                    large_fish = 0  # 無法確定
+                        
+                        if large_fish == 1:
+                            reeling_up()
+                        elif large_fish == 2:
+                            cv2.waitKey(100)
+                            pyautogui_press('c')
+                            print('Small fish (confirmed by multiple frames)')
+                            fishing_state = 0
+                            cv2.waitKey(100)
+                            continue
+                        
+
+                    # 一般情況拉起魚
+                    else:
+                        # # 如果白天模板的匹配度 >= 敏感度，就按下 'c'（預設對應遊戲內的釣魚指令）
+                        # if max_day >= sensitive:
+                        #     pyautogui_press('c')
+                        #     fishing_state = 0
+                        #     print("day catch", datetime.datetime.now(), "---", max_day)
+                        #     time.sleep(1)
+                        
+                        # # 如果夜晚模板的匹配度 >= 敏感度，也按下 'c'
+                        # if max_night >= sensitive:
+                        #     pyautogui_press('c')
+                        #     fishing_state = 0
+                        #     print("night catch", datetime.datetime.now(), "---", max_night)
+                        #     time.sleep(1)
+                        reeling_up()
 
         # 顯示畫面
         cv2.imshow(windowName, screen)
@@ -454,13 +568,15 @@ def timeout_checker():
 
 #-------------------------------------------------
 # 函式：status_checker
-# 用途：偵測遊戲畫面的其他狀態（例如主畫面、釣魚完畢後的畫面等），
+# 用途：偵測釣魚以外的其他狀態（例如主畫面、釣魚完畢後的畫面等），
 #       並進行相對應的按鍵操作
 #-------------------------------------------------
 def status_checker():
     global activate
     global counter
     global last_catch_time
+    global fishing_state
+    global large_fish
 
     while True:
         if activate:
@@ -481,23 +597,61 @@ def status_checker():
                 region=(0, 0, right, bot),
                 confidence=0.9
             )
-            # is_CatchAfter 用於偵測釣魚成功後的提示圖案
+            print(f"主畫面檢測: {is_MainScreen}")
+
             is_CatchAfter = pyautogui_locateOnScreen(
                 os.path.join(os.getcwd(), "img", "catch_after2.png"),
                 region=(0, 0, right, bot),
                 confidence=0.7
             )
+            print(f"釣魚成功提示: {is_CatchAfter}")
 
-            print("Check main!")
+            is_Recycle = pyautogui_locateOnScreen(
+                os.path.join(os.getcwd(), "img", "recycle2.png"),
+                region=(0, 0, right, bot),
+                confidence=0.7
+            )
+            print(f"回收視窗: {is_Recycle}")
+
+            is_Card = pyautogui_locateOnScreen(
+                os.path.join(os.getcwd(), "img", "card.png"),
+                region=(0, 0, right, bot),
+                confidence=0.8
+            )
+            print(f"卡片介面: {is_Card}")
+
+            is_OpenCard = pyautogui_locateOnScreen(
+                os.path.join(os.getcwd(), "img", "open_card.png"),
+                region=(0, 0, right, bot),
+                confidence=0.7
+            )
+            print(f"開卡按鈕: {is_OpenCard}")
+
+            is_CardResult = pyautogui_locateOnScreen(
+                os.path.join(os.getcwd(), "img", "card_result.png"),
+                region=(0, 0, right, bot),
+                confidence=0.8
+            )
+            print(f"卡片結果: {is_CardResult}")
+
+            is_Task = pyautogui_locateOnScreen(
+                os.path.join(os.getcwd(), "img", "task.png"),
+                region=(0, 0, right, bot),
+                confidence=0.7
+            )
+            print(f"任務提示: {is_Task}")
+            
+
+            # print("Check main!")
 
             # 如果是主畫面
             if is_MainScreen:
-                print("is_MainScreen!")
+                print("Checking mainscreen!")
                 # 若出現炫耀圖示（showoff），按下 'n' 鍵關閉
                 if pyautogui_locateOnScreen(
                     os.path.join(os.getcwd(), "img", "showoff.png"),
                     region=(0, 0, right, bot),
-                    confidence=0.7
+                    confidence=0.9
                 ):
                     print("is_showingoff!")
                     # pyautogui_press('n')
@@ -505,6 +659,9 @@ def status_checker():
 
                 # 按下 'f' 釣魚
                 pyautogui_press('f')
+                print('start fishing')
+                fishing_state = 1
+                large_fish = 0
                 time.sleep(3)
 
                 # 釣魚開始前，可能檢查是否需要修理
@@ -547,65 +704,55 @@ def status_checker():
                     pyautogui_press('r')
                     time.sleep(0.1)
                     pyautogui_press('r')
+                    time.sleep(0.1)
+                    if pyautogui_locateOnScreen(
+                        os.path.join(os.getcwd(), "img", "confirm2sell.png"),
+                        region=(0, 0, right, bot),
+                        confidence=0.7
+                    ):
+                        print("confirm to sell")
+                        pyautogui_press('p')
+                        time.sleep(0.5)
+                        pyautogui_press('r')
 
 
-            # 若偵測到回收視窗，按下 'p' 關閉或確認
-            if pyautogui_locateOnScreen(
-                os.path.join(os.getcwd(), "img", "recycle2.png"),
-                region=(0, 0, right, bot),
-                confidence=0.7
-            ):
+            # 根據檢測結果執行相應操作
+            if is_Recycle:
                 print("is_Recycle!")
                 pyautogui_press('p')
 
-            # 若偵測到 card 相關介面，則按 'k'（或其他鍵）關閉
-            if pyautogui_locateOnScreen(
-                os.path.join(os.getcwd(), "img", "card.png"),
-                region=(0, 0, right, bot),
-                confidence=0.8
-            ):
+            if is_Card:
                 print("is_card!")
                 pyautogui_press('k')
                 time.sleep(0.1)
 
-            # 若偵測到「open_card」按鈕，按下 'o' 打開
-            if pyautogui_locateOnScreen(
-                os.path.join(os.getcwd(), "img", "open_card.png"),
-                region=(0, 0, right, bot),
-                confidence=0.7
-            ):
+            if is_OpenCard:
                 print("open_card!")
                 pyautogui_press('o')
                 time.sleep(0.1)
 
-            # 若偵測到 card 結果畫面
-            if pyautogui_locateOnScreen(
-                os.path.join(os.getcwd(), "img", "card_result.png"),
-                region=(0, 0, right, bot),
-                confidence=0.7
-            ):
+            if is_CardResult:
                 print("is_card_result!")
                 pyautogui_press('y')
                 time.sleep(0.1)
 
-            # 若偵測到 task 任務提示，按下 'r' 處理
-            if pyautogui_locateOnScreen(
-                os.path.join(os.getcwd(), "img", "task.png"),
-                region=(0, 0, right, bot),
-                confidence=0.5
-            ):
+            if is_Task:
                 print("is_task!")
                 pyautogui_press('r')
                 time.sleep(0.1)
-                if pyautogui_locateOnScreen(
+                # 再次檢查 task 視窗是否存在
+                is_TaskStillExists = pyautogui_locateOnScreen(
                     os.path.join(os.getcwd(), "img", "task.png"),
                     region=(0, 0, right, bot),
-                    confidence=0.5
-                ):
+                    confidence=0.7
+                )
+                if is_TaskStillExists:
                     line_notify('新任務階段第二次檢查(按r沒用)')
                     pyautogui_press('y')
                     time.sleep(0.1)
-                    
+            
+
+                
 
 
         time.sleep(1)
