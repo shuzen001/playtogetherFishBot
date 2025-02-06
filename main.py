@@ -116,7 +116,7 @@ if config.has_option(configSection, 'sensitive'):
 
 
 #------------------------------------------------------------------------
-model = YOLO('fish_shadow/runs/detect/train11/weights/best.pt').to('cuda')  # 將模型移動到 GPU
+model = YOLO('fish_shadow_yolo.pt').to('cuda')  # 將模型移動到 GPU
 model.verbose = False  # 關閉模型的冗長輸出
 #------------------------------------------------------------------------
 
