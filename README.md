@@ -3,7 +3,7 @@
 **Warning: Do not use commercially**  
 **警告：請勿用於商業用途**
 
-![示意圖](https://github.com/bgm5768/playtogetherFishBot/blob/main/usage/img_source/img1.png)
+![示意圖](usage/img_source/img1.png)
 
 ---
 
@@ -96,7 +96,7 @@
    - 請在角色上方（當魚餌被咬時會有驚嘆號顯示）點擊，該區域會被標記為紅色方框，作為後續判斷依據。  
    - 若有疑問，請參考下方示意圖（例如 Example 1、Example 2、Example 3）。
 
-   ![設定示意圖](https://github.com/bgm5768/playtogetherFishBot/blob/main/usage/img_source/img2.png)
+   ![設定示意圖](usage/img_source/img2.png)
 
 7. **設定完成**  
    - 當紅框區域設定完成後，機器人便會根據選定模式持續進行自動釣魚操作。  
