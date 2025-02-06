@@ -1,80 +1,136 @@
 # playtogetherFishBot
-**Warning : Do not use commercially**
 
-<img src="https://github.com/bgm5768/playtogetherFishBot/blob/main/usage/%EC%98%88%EC%8B%9C%EC%9D%B4%EB%AF%B8%EC%A7%80/%EC%98%88%EC%8B%9C1.png">
+**Warning: Do not use commercially**  
+**警告：請勿用於商業用途**
 
-*Introduce*
+![示意圖](https://github.com/bgm5768/playtogetherFishBot/blob/main/usage/img_source/img1.png)
 
-> This is Play Together Auto Fishbot.
-I made this to kill time, but I decided to distribute it for newbies who lack stars.
-For reference, this is an Autobot that never stops because it does not have the same mechanical catch but has random elements. To add, Do not use commercially
+---
 
-## Develope Environment
-* Language : Python 3.9.0
-* Librarys : requirements.txt
+## 介紹
 
-## Preparation before use (required) ##
-1. BlueStacks version 5 or higher
-  
-2. BlueStack display settings
-  960x540
-  160dpi
+這是一款針對 **Play Together** 遊戲所開發的自動釣魚機器人，主要目的是為了讓新手玩家參考使用，打發無聊時間。  
+它透過自動截圖、影像比對與鍵盤控制的方式來判斷釣魚狀態，當魚餌被咬時便自動操作拋竿、收線等動作。  
+此外，機器人具備隨機元素，因此並非完全機械化，請使用者注意其隨機性。  
 
-3. BlueStack game control settings
-  Download the Usage -> bluestack_auto.cfg file included in the manual.
-  BlueStack Game Control -> Load bluestack_auto.cfg -> Save
-  After completing this, the key value will be the same as the key setting.png in the example image.
+**請注意：請勿用於商業用途**
 
-4. Download Play Together on BlueStacks
+---
 
-5. Set PlayTogether Language Kor
+## 開發環境
 
-# Caution
-When the bait bites, the bot mechanism performs automatic fishing by searching the exclamation point image on the character + automatic fishing through keyboard control.
-Therefore, there are some restrictions.
+- **程式語言**：Python 3.9.0（也適用其他 3.x 版本）
+- **函式庫**：請參考 [requirements.txt](requirements.txt)
+  - pyautogui
+  - opencv-python
+  - numpy
+  - ultralytics
+  - mss
+  - pywin32
+  - python-dotenv
+  - 其他相關依賴
 
-- BlueStacks always exists on the Windows screen.
-- The BlueStacks screen exists at coordinates (0, 0).
-- You cannot catch giant fish.
+---
 
-# Ability
-- Automatic fishing of fish
-- Fishing rod automatic repair
-- KEEP mode to automatically store fish after fishing (emptying the fish box is manual when it is full)
-- SELL mode that sells immediately after automatic fishing (**!!! Only works properly if you have an instant sell membership!!!**)
+## 使用前準備（必要項目）
 
-# Shortcut keys
-- F1: Auto Fishbot ON OFF
-- F2: Switch to KEEP mode (save fish after catching)
-- F3: Switch to SEEL mode (sell fish after catching)
-- F4: Quit
+1. **BlueStacks 版本**  
+   - 請使用 BlueStacks 5 或更高版本
 
-# Usage
-1. Turn on Play Together.
+2. **BlueStacks 顯示設定**  
+   - 畫面解析度：960x540  
+   - DPI：160dpi
 
-2. Run main.exe
+3. **BlueStacks 遊戲控制設定**  
+   - 請下載說明文件中附帶的 `bluestack_auto.cfg` 檔案  
+   - 在 BlueStacks 遊戲控制設定中，載入 `bluestack_auto.cfg` 並儲存設定  
+   - 完成後，按鍵值會與範例圖片中的設定一致
 
-3. Move the character to the location for automatic fishing.
+4. **下載 Play Together 至 BlueStacks**  
+   - 並確保遊戲語言設定為您所使用的語言（例如：英文或其他，不需轉成韓文）
 
-4. Wear the fishing rod you plan to use.
+---
 
-5. Press F1 to run the bot.
+## 功能與特色
 
-6. The bot throws a fishing rod.
+- **自動釣魚**  
+  利用截圖與影像比對（包括 YOLO 模型辨識），當偵測到魚餌狀態改變（例如角色上方出現驚嘆號）時，自動模擬拋竿與收線操作。
 
-7. When you move the mouse on the mirrored Enjoy Fish Bot screen, a square cursor will follow you. When you click on it, a red square box will appear on the screen.
-   Click this red square box at the location where an exclamation mark appears above the character when a fish bites the bait to create a red square box.
-   If you do not understand, please refer to Example 1, Example 2, and Example 3 in the example images.
+- **釣竿自動維修**  
+  當偵測到釣竿需要修理時，自動進行維修操作。
 
-   * <img src="https://github.com/bgm5768/playtogetherFishBot/blob/main/usage/%EC%98%88%EC%8B%9C%EC%9D%B4%EB%AF%B8%EC%A7%80/%EC%98%88%EC%8B%9C3.png">
+- **模式切換**  
+  - **KEEP 模式**：釣到魚後自動儲存魚（魚箱滿時需手動清空）。  
+  - **SELL 模式**：釣到魚後自動賣出（**僅在擁有即時販售會員時能正常運作**）。  
+  - **抓大魚模式**：透過 YOLO 模型辨識大魚與小魚（注意：目前無法捕捉巨型魚）。
 
+- **快捷鍵操作**  
+  - **F1**：切換自動釣魚機器人 ON / OFF  
+  - **F2**：切換至 KEEP 模式（釣到魚後保存）  
+  - **F3**：切換至 SELL 模式（釣到魚後賣出）  
+  - **F4**：退出程式  
+  - **F5**：切換至抓大魚模式（若有相關設定需求）  
+  - 數字鍵盤 **+** 與 **-** 可用來調整影像比對的敏感度
 
-9. Once the settings are complete, everything is done. Depending on the mode, the bot continues automatic fishing.
+---
 
+## 使用說明
 
-## Tips.
-> How to increase exclamation mark recognition rate
-  * As in the example images, it is a good idea to move the camera angle so that the red box is clearly captured with an empty background.
+1. **啟動遊戲**  
+   - 先開啟 Play Together 遊戲，並確保 BlueStacks 視窗固定在螢幕的 (0, 0) 座標。
 
+2. **執行程式**  
+   - 執行 `main.exe`（或直接使用 Python 執行主程式腳本）。
 
-* Whenever you move the location of the fishing spot or change the camera angle, you need to set the red box again.
+3. **移動角色**  
+   - 將角色移至適合釣魚的位置。
+
+4. **裝備釣竿**  
+   - 請穿戴您打算使用的釣竿。
+
+5. **啟動機器人**  
+   - 按下 **F1** 鍵以開啟自動釣魚功能，系統會開始模擬拋竿與收線等操作。
+
+6. **設定釣魚觸發區域**  
+   - 當啟動程式後，系統會顯示一個模擬畫面（Enjoy Fish Bot 畫面），並以一個方形游標跟隨滑鼠移動。  
+   - 請在角色上方（當魚餌被咬時會有驚嘆號顯示）點擊，該區域會被標記為紅色方框，作為後續判斷依據。  
+   - 若有疑問，請參考下方示意圖（例如 Example 1、Example 2、Example 3）。
+
+   ![設定示意圖](https://github.com/bgm5768/playtogetherFishBot/blob/main/usage/img_source/img2.png)
+
+7. **設定完成**  
+   - 當紅框區域設定完成後，機器人便會根據選定模式持續進行自動釣魚操作。  
+   - 如需調整攝影機角度或變更釣魚位置，每次變更後都需重新設定紅框區域以確保準確度。
+
+---
+
+## 注意事項
+
+- **視窗位置**：  
+  - BlueStacks 必須始終存在且固定在 Windows 螢幕上，且其螢幕位置必須位於 (0, 0) 座標。
+
+- **自動釣魚限制**：  
+  - 當魚餌咬鉤時，系統會依據畫面中驚嘆號的圖片進行判斷並透過鍵盤模擬操作，因此環境背景（例如紅框區域）必須清晰，建議調整攝影機角度以增加辨識率。  
+  - 目前機器人無法捕捉巨型魚。
+
+- **釣魚模式差異**：  
+  - **KEEP 模式**：釣到魚後會自動保存，魚箱滿時需手動清空。  
+  - **SELL 模式**：釣到魚後會自動賣出，請確認您已擁有即時販售會員以確保功能正常。
+
+---
+
+## 授權
+
+本專案採用 MIT 授權，請參閱 [LICENSE](LICENSE) 檔案以了解詳細內容。
+
+---
+
+## 其他說明
+
+- 若有任何疑問、建議或問題，歡迎在 GitHub Issue 中提出。  
+- 感謝所有參與測試與提供回饋的使用者，讓此專案持續改進。
+
+---
+
+希望這個 README 能夠幫助您快速上手並順利使用 playtogetherFishBot！  
+**祝您釣魚愉快！**

@@ -757,109 +757,109 @@ def status_checker():
 
         time.sleep(1)
 
-def measuring(pt_x: int, pt_y: int, fish_color_rgb):
-    global bot
+# def measuring(pt_x: int, pt_y: int, fish_color_rgb):
+#     global bot
 
-    # fish_color_rgb = (66, 176, 195)
-    windowName = 'Measuring fish size'
-    scale_factor = 2  # 放大倍數
-    crop_size = 50    # 擷取範圍大小
+#     # fish_color_rgb = (66, 176, 195)
+#     windowName = 'Measuring fish size'
+#     scale_factor = 2  # 放大倍數
+#     crop_size = 50    # 擷取範圍大小
     
-    # HSV 容差設定
-    tolerance_hue = 15  # 色相範圍
-    tolerance_sat = 20  # 飽和度範圍
-    tolerance_val = 20  # 亮度範圍
+#     # HSV 容差設定
+#     tolerance_hue = 15  # 色相範圍
+#     tolerance_sat = 20  # 飽和度範圍
+#     tolerance_val = 20  # 亮度範圍
 
-    cv2.namedWindow(windowName)
-    cv2.moveWindow(windowName, 0, 2*(bot + 30))
+#     cv2.namedWindow(windowName)
+#     cv2.moveWindow(windowName, 0, 2*(bot + 30))
 
-    def on_click(x, y, button, pressed):
-        nonlocal pt_x, pt_y
-        if pressed and button == mouse.Button.right:  # 只在右鍵按下時更新
-            pt_x, pt_y = x, y
-            print(f"更新位置為: ({pt_x}, {pt_y})")
+#     def on_click(x, y, button, pressed):
+#         nonlocal pt_x, pt_y
+#         if pressed and button == mouse.Button.right:  # 只在右鍵按下時更新
+#             pt_x, pt_y = x, y
+#             print(f"更新位置為: ({pt_x}, {pt_y})")
 
-    from pynput import mouse
-    listener = mouse.Listener(on_click=on_click)
-    listener.start()
+#     from pynput import mouse
+#     listener = mouse.Listener(on_click=on_click)
+#     listener.start()
 
-    while True:
-        # 截圖指定點位周圍的範圍
-        screen = pyautogui_screenshot(region=(
-            pt_x - 2*crop_size,
-            pt_y - 2*crop_size,
-            crop_size * 4,
-            crop_size * 4
-        ))
-        screen = np.array(screen)
-        screen = cv2.cvtColor(screen, cv2.COLOR_RGB2BGR)
+#     while True:
+#         # 截圖指定點位周圍的範圍
+#         screen = pyautogui_screenshot(region=(
+#             pt_x - 2*crop_size,
+#             pt_y - 2*crop_size,
+#             crop_size * 4,
+#             crop_size * 4
+#         ))
+#         screen = np.array(screen)
+#         screen = cv2.cvtColor(screen, cv2.COLOR_RGB2BGR)
         
-        # 轉換到 HSV 空間
-        hsv_image = cv2.cvtColor(screen, cv2.COLOR_BGR2HSV)
+#         # 轉換到 HSV 空間
+#         hsv_image = cv2.cvtColor(screen, cv2.COLOR_BGR2HSV)
         
-        # 將魚影顏色從 RGB 轉換到 HSV
-        fish_color_bgr = fish_color_rgb[::-1]
-        fish_color_hsv = cv2.cvtColor(np.uint8([[fish_color_bgr]]), cv2.COLOR_BGR2HSV)[0][0]
+#         # 將魚影顏色從 RGB 轉換到 HSV
+#         fish_color_bgr = fish_color_rgb[::-1]
+#         fish_color_hsv = cv2.cvtColor(np.uint8([[fish_color_bgr]]), cv2.COLOR_BGR2HSV)[0][0]
 
-        # 設定 HSV 範圍
-        lower_bound = np.array([
-            max(0, fish_color_hsv[0] - tolerance_hue),
-            max(0, fish_color_hsv[1] - tolerance_sat),
-            max(0, fish_color_hsv[2] - tolerance_val),
-        ])
-        upper_bound = np.array([
-            min(179, fish_color_hsv[0] + tolerance_hue),
-            min(255, fish_color_hsv[1] + tolerance_sat),
-            min(255, fish_color_hsv[2] + tolerance_val),
-        ])
+#         # 設定 HSV 範圍
+#         lower_bound = np.array([
+#             max(0, fish_color_hsv[0] - tolerance_hue),
+#             max(0, fish_color_hsv[1] - tolerance_sat),
+#             max(0, fish_color_hsv[2] - tolerance_val),
+#         ])
+#         upper_bound = np.array([
+#             min(179, fish_color_hsv[0] + tolerance_hue),
+#             min(255, fish_color_hsv[1] + tolerance_sat),
+#             min(255, fish_color_hsv[2] + tolerance_val),
+#         ])
 
-        # 產生遮罩
-        mask = cv2.inRange(hsv_image, lower_bound, upper_bound)
+#         # 產生遮罩
+#         mask = cv2.inRange(hsv_image, lower_bound, upper_bound)
 
-        # 找出輪廓
-        contours, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+#         # 找出輪廓
+#         contours, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
 
-        # 放大圖片
-        screen = cv2.resize(screen, None, fx=scale_factor, fy=scale_factor, interpolation=cv2.INTER_LINEAR)
+#         # 放大圖片
+#         screen = cv2.resize(screen, None, fx=scale_factor, fy=scale_factor, interpolation=cv2.INTER_LINEAR)
 
-        # 繪製輪廓和資訊
-        for contour in contours:
-            area = cv2.contourArea(contour)
-            if area > 50:  # 過濾小區域
-                try:
-                    # 縮放輪廓點
-                    scaled_contour = contour * scale_factor
-                    # 確保輪廓包含點
-                    if len(scaled_contour) > 0:
-                        # 畫輪廓
-                        cv2.drawContours(screen, [scaled_contour], -1, (0, 0, 255), 2)  # 紅色輪廓
+#         # 繪製輪廓和資訊
+#         for contour in contours:
+#             area = cv2.contourArea(contour)
+#             if area > 50:  # 過濾小區域
+#                 try:
+#                     # 縮放輪廓點
+#                     scaled_contour = contour * scale_factor
+#                     # 確保輪廓包含點
+#                     if len(scaled_contour) > 0:
+#                         # 畫輪廓
+#                         cv2.drawContours(screen, [scaled_contour], -1, (0, 0, 255), 2)  # 紅色輪廓
 
-                        # 畫邊界矩形
-                        x, y, w, h = cv2.boundingRect(contour)
-                        x, y, w, h = [int(v * scale_factor) for v in [x, y, w, h]]
-                        cv2.rectangle(screen, (x, y), (x + w, y + h), (0, 255, 0), 2)  # 綠色矩形框
+#                         # 畫邊界矩形
+#                         x, y, w, h = cv2.boundingRect(contour)
+#                         x, y, w, h = [int(v * scale_factor) for v in [x, y, w, h]]
+#                         cv2.rectangle(screen, (x, y), (x + w, y + h), (0, 255, 0), 2)  # 綠色矩形框
 
-                        # 顯示面積資訊
-                        cv2.putText(screen, f"Area: {area:.0f}", (10, 30), 
-                                cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 2)
-                except Exception as e:
-                    print(f"繪製輪廓時發生錯誤: {e}")
-                    continue
+#                         # 顯示面積資訊
+#                         cv2.putText(screen, f"Area: {area:.0f}", (10, 30), 
+#                                 cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 2)
+#                 except Exception as e:
+#                     print(f"繪製輪廓時發生錯誤: {e}")
+#                     continue
 
-        # 在放大後的圖片中心畫十字線
-        h, w = screen.shape[:2]
-        center_x, center_y = w // 2, h // 2
-        cv2.line(screen, (center_x, 0), (center_x, h), (0, 255, 0), 1)
-        cv2.line(screen, (0, center_y), (w, center_y), (0, 255, 0), 1)
+#         # 在放大後的圖片中心畫十字線
+#         h, w = screen.shape[:2]
+#         center_x, center_y = w // 2, h // 2
+#         cv2.line(screen, (center_x, 0), (center_x, h), (0, 255, 0), 1)
+#         cv2.line(screen, (0, center_y), (w, center_y), (0, 255, 0), 1)
 
-        # 顯示畫面
-        cv2.imshow(windowName, screen)
+#         # 顯示畫面
+#         cv2.imshow(windowName, screen)
         
-        if cv2.waitKey(1) & 0xFF == ord('q') or cv2.getWindowProperty(windowName, cv2.WND_PROP_VISIBLE) < 1:
-            break
+#         if cv2.waitKey(1) & 0xFF == ord('q') or cv2.getWindowProperty(windowName, cv2.WND_PROP_VISIBLE) < 1:
+#             break
 
-    cv2.destroyWindow(windowName)
-    listener.stop()
+#     cv2.destroyWindow(windowName)
+#     listener.stop()
 
 #-------------------------------------------------
 # 函式：main
